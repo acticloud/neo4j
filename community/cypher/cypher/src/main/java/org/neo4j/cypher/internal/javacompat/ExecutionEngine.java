@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Clock;
 
 import org.neo4j.cypher.CypherException;
@@ -82,11 +84,24 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return inner.execute( query, parameters, context, false );
+            long threadId = Thread.currentThread().getId();
+            FileWriter numascopeLabel = new FileWriter("/run/numascope-label");
+            numascopeLabel.write("S T" + threadId + "\n");
+            numascopeLabel.flush();
+            Result result = inner.execute(query, parameters, context, false);
+            numascopeLabel.write("E T" + threadId + "\n");
+            numascopeLabel.flush();
+            numascopeLabel.close();
+            return result;
         }
         catch ( CypherException e )
         {
             throw new QueryExecutionKernelException( e );
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            return null;
         }
     }
 
